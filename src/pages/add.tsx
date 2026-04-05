@@ -8,7 +8,8 @@ import { env } from '~/env';
 import { cronFromBackend } from '~/lib/cron';
 import { parseCurrencyCode } from '~/lib/currency';
 import { isBankConnectionConfigured } from '~/server/bankTransactionHelper';
-import { useAddExpenseStore } from '~/store/addStore';
+import { useAddExpenseStore, loadLastSplit } from '~/store/addStore';
+import { SplitType } from '@prisma/client';
 import { type NextPageWithUser } from '~/types';
 import { api } from '~/utils/api';
 import { customServerSideTranslations } from '~/utils/i18n/server';
@@ -77,15 +78,42 @@ const AddPage: NextPageWithUser<{
     if (groupId && !groupQuery.isPending && groupQuery.data && currentUser) {
       setGroup(groupQuery.data);
 
-      setParticipants([
+      const allParticipants = [
         currentUser,
         ...groupQuery.data.groupUsers
           .map((gu) => gu.user)
           .filter((user) => user.id !== currentUser.id),
-      ]);
+      ];
+
+      setParticipants(allParticipants);
       useAddExpenseStore.setState({ showFriends: false });
+
+      // Restore last-used split config for this group
+      const saved = loadLastSplit(
+        _groupId,
+        allParticipants.map((p) => p.id),
+      );
+      if (saved) {
+        const splitShares = Object.fromEntries(
+          allParticipants.map((p) => [
+            p.id,
+            Object.fromEntries(
+              Object.values(SplitType).map((type) => [
+                type,
+                type === saved.splitType
+                  ? (saved.splitShares[p.id] ?? 0n)
+                  : undefined,
+              ]),
+            ),
+          ]),
+        );
+        useAddExpenseStore.setState({
+          splitType: saved.splitType,
+          splitShares,
+        });
+      }
     }
-  }, [groupId, groupQuery.isPending, groupQuery.data, currentUser, setGroup, setParticipants]);
+  }, [groupId, groupQuery.isPending, groupQuery.data, currentUser, setGroup, setParticipants, _groupId]);
 
   useEffect(() => {
     if (friendId && currentUser && friendQuery.data) {
