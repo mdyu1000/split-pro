@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
 import { type CurrencyCode } from '~/lib/currency';
-import { useAddExpenseStore } from '~/store/addStore';
+import { useAddExpenseStore, saveLastSplit } from '~/store/addStore';
 import { api } from '~/utils/api';
 
 import { toast } from 'sonner';
@@ -139,6 +139,16 @@ export const AddOrEditExpensePage: React.FC<{
         {
           onSuccess: (d) => {
             if (d) {
+              // Save split config for this group
+              if (group?.id) {
+                saveLastSplit(
+                  group.id,
+                  splitType,
+                  splitShares,
+                  participants.map((p) => p.id),
+                );
+              }
+
               if (multipleTransactions.length > 0) {
                 const allTransactions = [...multipleTransactions];
                 const transactionToAdd = allTransactions.pop();
