@@ -104,21 +104,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
       <nav className="bg-opacity-80 fixed bottom-0 flex w-full justify-between border-t px-2 pb-4 shadow-xs backdrop-blur-lg lg:hidden">
         <NavItem
-          title={t?.('navigation.balances') ?? 'Balances'}
-          Icon={SolidScaleIcon}
-          link="/balances"
-          currentPath={currentPath}
-        />
-        <NavItem
           title={t?.('navigation.groups') ?? 'Groups'}
           Icon={SolidUserGroupIcon}
           link="/groups"
-          currentPath={currentPath}
-        />
-        <NavItem
-          title={t?.('navigation.add') ?? 'Add'}
-          Icon={SolidPlusCircleIcon}
-          link="/add"
           currentPath={currentPath}
         />
         <NavItem
