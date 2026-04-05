@@ -443,3 +443,82 @@ export function calculateSplitShareBasedOnAmount(
       break;
   }
 }
+
+// --- Remember last split per group (localStorage) ---
+
+const SPLIT_STORAGE_PREFIX = 'splitpro:group:';
+
+interface LastSplitConfig {
+  splitType: SplitType;
+  splitShares: Record<number, number>;
+  participantIds: number[];
+}
+
+const IGNORED_SPLIT_TYPES: SplitType[] = [SplitType.SETTLEMENT, SplitType.CURRENCY_CONVERSION];
+
+export function saveLastSplit(
+  groupId: number,
+  splitType: SplitType,
+  splitShares: SplitShares,
+  participantIds: number[],
+): void {
+  if (IGNORED_SPLIT_TYPES.includes(splitType)) {
+    return;
+  }
+
+  const serialized: LastSplitConfig = {
+    splitType,
+    splitShares: Object.fromEntries(
+      Object.entries(splitShares).map(([userId, shares]) => [
+        userId,
+        Number(shares[splitType] ?? 0n),
+      ]),
+    ),
+    participantIds: [...participantIds].sort((a, b) => a - b),
+  };
+
+  try {
+    localStorage.setItem(
+      `${SPLIT_STORAGE_PREFIX}${groupId}:lastSplit`,
+      JSON.stringify(serialized),
+    );
+  } catch {
+    // localStorage full or unavailable — silently ignore
+  }
+}
+
+export function loadLastSplit(
+  groupId: number,
+  currentMemberIds: number[],
+): { splitType: SplitType; splitShares: Record<number, bigint> } | null {
+  try {
+    const raw = localStorage.getItem(`${SPLIT_STORAGE_PREFIX}${groupId}:lastSplit`);
+    if (!raw) return null;
+
+    const config: LastSplitConfig = JSON.parse(raw);
+
+    if (IGNORED_SPLIT_TYPES.includes(config.splitType)) {
+      return null;
+    }
+
+    const sortedCurrent = [...currentMemberIds].sort((a, b) => a - b);
+    if (
+      sortedCurrent.length !== config.participantIds.length ||
+      sortedCurrent.some((id, i) => id !== config.participantIds[i])
+    ) {
+      return null;
+    }
+
+    return {
+      splitType: config.splitType,
+      splitShares: Object.fromEntries(
+        Object.entries(config.splitShares).map(([userId, value]) => [
+          userId,
+          BigInt(value),
+        ]),
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
