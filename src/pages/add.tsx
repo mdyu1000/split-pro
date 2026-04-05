@@ -8,7 +8,7 @@ import { env } from '~/env';
 import { cronFromBackend } from '~/lib/cron';
 import { parseCurrencyCode } from '~/lib/currency';
 import { isBankConnectionConfigured } from '~/server/bankTransactionHelper';
-import { useAddExpenseStore, loadLastSplit } from '~/store/addStore';
+import { useAddExpenseStore, loadLastSplit, type SplitShares } from '~/store/addStore';
 import { SplitType } from '@prisma/client';
 import { type NextPageWithUser } from '~/types';
 import { api } from '~/utils/api';
@@ -94,19 +94,16 @@ const AddPage: NextPageWithUser<{
         allParticipants.map((p) => p.id),
       );
       if (saved) {
-        const splitShares = Object.fromEntries(
-          allParticipants.map((p) => [
-            p.id,
-            Object.fromEntries(
-              Object.values(SplitType).map((type) => [
-                type,
-                type === saved.splitType
-                  ? (saved.splitShares[p.id] ?? 0n)
-                  : undefined,
-              ]),
-            ),
-          ]),
-        );
+        const splitShares: SplitShares = {};
+        for (const p of allParticipants) {
+          const shares = {} as Record<SplitType, bigint | undefined>;
+          for (const type of Object.values(SplitType)) {
+            shares[type] = type === saved.splitType
+              ? (saved.splitShares[p.id] ?? 0n)
+              : undefined;
+          }
+          splitShares[p.id] = shares;
+        }
         useAddExpenseStore.setState({
           splitType: saved.splitType,
           splitShares,
