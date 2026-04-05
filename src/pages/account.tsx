@@ -156,17 +156,6 @@ const AccountPage: NextPageWithUser<{
             {t('account.download_splitpro_data')}
           </AccountButton>
 
-          <AccountButton href="/import-splitwise">
-            <DownloadCloud className="size-5 text-violet-500" />
-            {t('account.import_from_splitwise')}
-          </AccountButton>
-
-          <DebugInfo gitRevision={gitRevision}>
-            <AccountButton>
-              <BadgeInfo className="size-5 text-red-700" />
-              {t('account.debug_info')}
-            </AccountButton>
-          </DebugInfo>
         </div>
 
         <div className="mt-2 flex justify-center">
